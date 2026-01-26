@@ -1,0 +1,39 @@
+# Source files
+src/
+tsconfig.json
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build
+*.tsbuildinfo
+
+# Git
+.git/
+.gitignore
+
+# Documentation (keep README.md)
+CONTRIBUTING.md
+docs/
+
+# Tests
+test/
+tests/
+*.test.ts
+*.spec.ts
+
+# CI/CD
+.github/
+
+# Misc
+node_modules/
+.DS_Store
+Thumbs.db
