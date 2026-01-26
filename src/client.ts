@@ -25,11 +25,12 @@ export class TribeCRMClient {
 
     try {
       const response = await axios.post(
-        `${this.config.apiUrl}/oauth/token`,
+        'https://auth.tribecrm.nl/oauth2/token',
         new URLSearchParams({
           grant_type: 'client_credentials',
           client_id: this.config.clientId,
           client_secret: this.config.clientSecret,
+          ...(this.config.organizationId && { organization_id: this.config.organizationId }),
         }),
         {
           headers: {
@@ -41,66 +42,132 @@ export class TribeCRMClient {
       this.token = response.data;
       this.tokenExpiry = now + (this.token!.expires_in * 1000);
       this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${this.token!.access_token}`;
-    } catch (error) {
-      throw new Error(`Authentication failed: ${error}`);
+    } catch (error: any) {
+      throw new Error(`Authentication failed: ${error.response?.data?.error_description || error.message}`);
     }
   }
 
-  async getEntity(entityType: string, entityId: string): Promise<Entity> {
+  /**
+   * Get a single entity by ID
+   * @param entityType OData entity type (e.g. 'Relation_Organization', 'Relation_Person')
+   * @param entityId Entity UUID
+   * @param expand Optional $expand parameter
+   * @param select Optional $select parameter
+   */
+  async getEntity(
+    entityType: string,
+    entityId: string,
+    expand?: string,
+    select?: string
+  ): Promise<Entity> {
     await this.ensureAuthenticated();
-    const response = await this.axiosInstance.get(`/api/entity/${entityType}/${entityId}`);
+    const params: any = {};
+    if (expand) params.$expand = expand;
+    if (select) params.$select = select;
+    
+    const response = await this.axiosInstance.get(`/v1/odata/${entityType}(${entityId})`, { params });
     return response.data;
   }
 
+  /**
+   * Create a new entity
+   * @param entityType OData entity type
+   * @param data Entity data (without ID)
+   */
   async createEntity(entityType: string, data: Record<string, any>): Promise<Entity> {
     await this.ensureAuthenticated();
-    const response = await this.axiosInstance.post(`/api/entity/${entityType}`, data);
+    const response = await this.axiosInstance.post(`/v1/odata/${entityType}`, data);
     return response.data;
   }
 
+  /**
+   * Update an existing entity
+   * @param entityType OData entity type
+   * @param entityId Entity UUID
+   * @param data Entity data (must include ID)
+   */
   async updateEntity(entityType: string, entityId: string, data: Record<string, any>): Promise<Entity> {
     await this.ensureAuthenticated();
-    const response = await this.axiosInstance.put(`/api/entity/${entityType}/${entityId}`, data);
+    const payload = { ...data, ID: entityId };
+    const response = await this.axiosInstance.post(`/v1/odata/${entityType}`, payload);
     return response.data;
   }
 
+  /**
+   * Delete an entity
+   * @param entityType OData entity type
+   * @param entityId Entity UUID
+   */
   async deleteEntity(entityType: string, entityId: string): Promise<void> {
     await this.ensureAuthenticated();
-    await this.axiosInstance.delete(`/api/entity/${entityType}/${entityId}`);
+    await this.axiosInstance.delete(`/v1/odata/${entityType}(${entityId})`);
   }
 
-  async searchEntities(
+  /**
+   * Search/query entities with OData filters
+   * @param entityType OData entity type
+   * @param options Query options (filter, select, expand, orderby, top, skip, count)
+   */
+  async queryEntities(
     entityType: string,
-    query?: string,
-    filters?: Record<string, any>,
-    page: number = 1,
-    pageSize: number = 20
-  ): Promise<SearchResult> {
+    options?: {
+      filter?: string;
+      select?: string;
+      expand?: string;
+      orderby?: string;
+      top?: number;
+      skip?: number;
+      count?: boolean;
+    }
+  ): Promise<any> {
     await this.ensureAuthenticated();
-    const response = await this.axiosInstance.post(`/api/entity/${entityType}/search`, {
-      query,
-      filters,
-      page,
-      pageSize,
-    });
+    
+    const params: any = {};
+    if (options?.filter) params.$filter = options.filter;
+    if (options?.select) params.$select = options.select;
+    if (options?.expand) params.$expand = options.expand;
+    if (options?.orderby) params.$orderby = options.orderby;
+    if (options?.top) params.$top = options.top;
+    if (options?.skip) params.$skip = options.skip;
+    if (options?.count) params.$count = 'true';
+
+    const response = await this.axiosInstance.get(`/v1/odata/${entityType}`, { params });
     return response.data;
   }
 
+  /**
+   * Get current employee information
+   */
+  async getCurrentEmployee(expand?: string): Promise<any> {
+    await this.ensureAuthenticated();
+    const params: any = {};
+    if (expand) params.$expand = expand;
+    
+    const response = await this.axiosInstance.get('/v1/odata/GetCurrentEmployee()', { params });
+    return response.data;
+  }
+
+  /**
+   * List available entity types (metadata)
+   */
   async listEntityTypes(): Promise<EntityType[]> {
     await this.ensureAuthenticated();
-    const response = await this.axiosInstance.get('/api/entity/types');
-    return response.data;
-  }
-
-  async listConnectors(): Promise<Connector[]> {
-    await this.ensureAuthenticated();
-    const response = await this.axiosInstance.get('/api/connector');
-    return response.data;
-  }
-
-  async getConnector(connectorId: string): Promise<Connector> {
-    await this.ensureAuthenticated();
-    const response = await this.axiosInstance.get(`/api/connector/${connectorId}`);
-    return response.data;
+    try {
+      const response = await this.axiosInstance.get('/v1/odata/$metadata');
+      // Parse OData metadata XML - simplified version
+      // In production, you'd parse the XML properly
+      return [
+        { code: 'Relation_Organization', name: 'Organizations', fields: [] },
+        { code: 'Relation_Person', name: 'Persons', fields: [] },
+        { code: 'Relationship_Organization_CommercialRelationship_Customer', name: 'Customers', fields: [] },
+        { code: 'Relationship_Organization_CommercialRelationship_Lead', name: 'Leads', fields: [] },
+        { code: 'Activity_Invoice', name: 'Invoices', fields: [] },
+        { code: 'Activity_Appointment', name: 'Appointments', fields: [] },
+        { code: 'Product', name: 'Products', fields: [] },
+      ];
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+      return [];
+    }
   }
 }
