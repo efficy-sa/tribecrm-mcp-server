@@ -16,15 +16,16 @@ dotenv.config();
 
 // Validate configuration
 const config: TribeCRMConfig = {
-  apiUrl: process.env.TRIBECRM_API_URL || '',
+  apiUrl: process.env.TRIBECRM_API_URL || 'https://api.tribecrm.nl',
   clientId: process.env.TRIBECRM_CLIENT_ID || '',
   clientSecret: process.env.TRIBECRM_CLIENT_SECRET || '',
   organizationId: process.env.TRIBECRM_ORGANIZATION_ID,
 };
 
-if (!config.apiUrl || !config.clientId || !config.clientSecret) {
+if (!config.clientId || !config.clientSecret) {
   console.error('Error: Missing required environment variables');
-  console.error('Required: TRIBECRM_API_URL, TRIBECRM_CLIENT_ID, TRIBECRM_CLIENT_SECRET');
+  console.error('Required: TRIBECRM_CLIENT_ID, TRIBECRM_CLIENT_SECRET');
+  console.error('Optional: TRIBECRM_API_URL (default: https://api.tribecrm.nl), TRIBECRM_ORGANIZATION_ID');
   process.exit(1);
 }
 
@@ -35,7 +36,7 @@ const client = new TribeCRMClient(config);
 const server = new Server(
   {
     name: process.env.MCP_SERVER_NAME || 'tribecrm',
-    version: '0.1.0',
+    version: '0.2.0',
   },
   {
     capabilities: {
@@ -51,20 +52,70 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'tribecrm_get_entity',
-        description: 'Retrieve a specific entity by ID from TribeCRM',
+        description: 'Get a single entity by ID. Common entity types: Relation_Organization, Relation_Person, Activity_Invoice, Product',
         inputSchema: {
           type: 'object',
           properties: {
             entityType: {
               type: 'string',
-              description: 'Entity type (e.g., contact, company, deal)',
+              description: 'OData entity type (e.g., Relation_Organization, Relation_Person, Activity_Invoice)',
             },
             entityId: {
               type: 'string',
-              description: 'Entity ID',
+              description: 'Entity UUID',
+            },
+            expand: {
+              type: 'string',
+              description: 'Optional $expand parameter (e.g., "Address", "InvoiceAddress($expand=Country)")',
+            },
+            select: {
+              type: 'string',
+              description: 'Optional $select parameter (e.g., "Name,EmailAddress,PhoneNumber")',
             },
           },
           required: ['entityType', 'entityId'],
+        },
+      },
+      {
+        name: 'tribecrm_query_entities',
+        description: 'Query entities with OData filters. Supports $filter, $select, $expand, $orderby, $top, $skip, $count',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            entityType: {
+              type: 'string',
+              description: 'OData entity type to query',
+            },
+            filter: {
+              type: 'string',
+              description: 'OData $filter expression (e.g., "Name eq \'John\' or contains(Name,\'tech\')")',
+            },
+            select: {
+              type: 'string',
+              description: 'Comma-separated list of fields to return',
+            },
+            expand: {
+              type: 'string',
+              description: 'Related entities to expand',
+            },
+            orderby: {
+              type: 'string',
+              description: 'Field to sort by with optional desc (e.g., "Name desc")',
+            },
+            top: {
+              type: 'number',
+              description: 'Number of records to return (pagination)',
+            },
+            skip: {
+              type: 'number',
+              description: 'Number of records to skip (pagination)',
+            },
+            count: {
+              type: 'boolean',
+              description: 'Include total count in response',
+            },
+          },
+          required: ['entityType'],
         },
       },
       {
@@ -75,11 +126,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             entityType: {
               type: 'string',
-              description: 'Entity type (e.g., contact, company, deal)',
+              description: 'OData entity type',
             },
             data: {
               type: 'object',
-              description: 'Entity data as key-value pairs',
+              description: 'Entity data (do not include ID)',
             },
           },
           required: ['entityType', 'data'],
@@ -93,15 +144,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             entityType: {
               type: 'string',
-              description: 'Entity type',
+              description: 'OData entity type',
             },
             entityId: {
               type: 'string',
-              description: 'Entity ID',
+              description: 'Entity UUID to update',
             },
             data: {
               type: 'object',
-              description: 'Updated entity data as key-value pairs',
+              description: 'Updated entity data',
             },
           },
           required: ['entityType', 'entityId', 'data'],
@@ -115,68 +166,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             entityType: {
               type: 'string',
-              description: 'Entity type',
+              description: 'OData entity type',
             },
             entityId: {
               type: 'string',
-              description: 'Entity ID',
+              description: 'Entity UUID to delete',
             },
           },
           required: ['entityType', 'entityId'],
         },
       },
       {
-        name: 'tribecrm_search_entities',
-        description: 'Search for entities in TribeCRM with optional filters',
+        name: 'tribecrm_get_current_employee',
+        description: 'Get information about the currently authenticated employee',
         inputSchema: {
           type: 'object',
           properties: {
-            entityType: {
+            expand: {
               type: 'string',
-              description: 'Entity type to search',
-            },
-            query: {
-              type: 'string',
-              description: 'Search query string',
-            },
-            filters: {
-              type: 'object',
-              description: 'Filter criteria as key-value pairs',
-            },
-            page: {
-              type: 'number',
-              description: 'Page number (default: 1)',
-              default: 1,
-            },
-            pageSize: {
-              type: 'number',
-              description: 'Results per page (default: 20)',
-              default: 20,
+              description: 'Optional $expand parameter (e.g., "Person")',
             },
           },
-          required: ['entityType'],
-        },
-      },
-      {
-        name: 'tribecrm_list_connectors',
-        description: 'List all available connectors in TribeCRM',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-        },
-      },
-      {
-        name: 'tribecrm_get_connector',
-        description: 'Get details of a specific connector',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            connectorId: {
-              type: 'string',
-              description: 'Connector ID',
-            },
-          },
-          required: ['connectorId'],
         },
       },
     ],
@@ -190,13 +200,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     switch (name) {
       case 'tribecrm_get_entity': {
-        const { entityType, entityId } = args as { entityType: string; entityId: string };
-        const entity = await client.getEntity(entityType, entityId);
+        const { entityType, entityId, expand, select } = args as {
+          entityType: string;
+          entityId: string;
+          expand?: string;
+          select?: string;
+        };
+        const entity = await client.getEntity(entityType, entityId, expand, select);
         return {
           content: [
             {
               type: 'text',
               text: JSON.stringify(entity, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'tribecrm_query_entities': {
+        const { entityType, filter, select, expand, orderby, top, skip, count } = args as {
+          entityType: string;
+          filter?: string;
+          select?: string;
+          expand?: string;
+          orderby?: string;
+          top?: number;
+          skip?: number;
+          count?: boolean;
+        };
+        const results = await client.queryEntities(entityType, {
+          filter,
+          select,
+          expand,
+          orderby,
+          top,
+          skip,
+          count,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(results, null, 2),
             },
           ],
         };
@@ -209,7 +254,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: `Entity created successfully:\n${JSON.stringify(entity, null, 2)}`,
+              text: `Entity created successfully:\\n${JSON.stringify(entity, null, 2)}`,
             },
           ],
         };
@@ -226,7 +271,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: `Entity updated successfully:\n${JSON.stringify(entity, null, 2)}`,
+              text: `Entity updated successfully:\\n${JSON.stringify(entity, null, 2)}`,
             },
           ],
         };
@@ -245,51 +290,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case 'tribecrm_search_entities': {
-        const { entityType, query, filters, page, pageSize } = args as {
-          entityType: string;
-          query?: string;
-          filters?: Record<string, any>;
-          page?: number;
-          pageSize?: number;
-        };
-        const results = await client.searchEntities(
-          entityType,
-          query,
-          filters,
-          page || 1,
-          pageSize || 20
-        );
+      case 'tribecrm_get_current_employee': {
+        const { expand } = args as { expand?: string };
+        const employee = await client.getCurrentEmployee(expand);
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(results, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'tribecrm_list_connectors': {
-        const connectors = await client.listConnectors();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(connectors, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'tribecrm_get_connector': {
-        const { connectorId } = args as { connectorId: string };
-        const connector = await client.getConnector(connectorId);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(connector, null, 2),
+              text: JSON.stringify(employee, null, 2),
             },
           ],
         };
@@ -298,12 +306,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
-  } catch (error) {
+  } catch (error: any) {
     return {
       content: [
         {
           type: 'text',
-          text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+          text: `Error: ${error.response?.data?.error?.message || error.message}`,
         },
       ],
       isError: true,
@@ -319,7 +327,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
       resources: entityTypes.map((type) => ({
         uri: `tribecrm://entity-types/${type.code}`,
         name: type.name,
-        description: `Entity type definition for ${type.name}`,
+        description: `Entity type: ${type.name}`,
         mimeType: 'application/json',
       })),
     };
@@ -354,8 +362,8 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     }
 
     throw new Error(`Unknown resource URI: ${uri}`);
-  } catch (error) {
-    throw new Error(`Error reading resource: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (error: any) {
+    throw new Error(`Error reading resource: ${error.message}`);
   }
 });
 
@@ -363,7 +371,8 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('TribeCRM MCP Server running on stdio');
+  console.error('TribeCRM MCP Server v0.2.0 running on stdio');
+  console.error('Connected to:', config.apiUrl);
 }
 
 main().catch((error) => {
