@@ -1,5 +1,5 @@
 {
-  "name": "@efficy-sa/tribecrm-mcp-server",
+  "name": "@efficy/tribecrm-mcp-server",
   "version": "0.2.0",
   "description": "Model Context Protocol server for TribeCRM API - enables AI assistants to interact with TribeCRM",
   "main": "dist/index.js",
