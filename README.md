@@ -1,5 +1,6 @@
 # TribeCRM MCP Server
 
+[![npm version](https://img.shields.io/npm/v/@efficy/tribecrm-mcp-server)](https://www.npmjs.com/package/@efficy/tribecrm-mcp-server)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.0-green)](https://github.com/modelcontextprotocol)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -31,49 +32,47 @@ Model Context Protocol (MCP) server for TribeCRM API integration. This server en
 
 ## 🔧 Installation
 
+### Option 1: Using npx (Recommended)
+
+No installation required! The server can be run directly using npx.
+
+### Option 2: Local Development
+
 ```bash
+git clone https://github.com/efficy-sa/tribecrm-mcp-server.git
+cd tribecrm-mcp-server
 npm install
+npm run build
 ```
 
 ## ⚙️ Configuration
 
-1. Copy the environment template:
-```bash
-cp .env.example .env
+### Claude Desktop Configuration
+
+Add to your Claude Desktop config file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+#### Using npx (Recommended)
+
+```json
+{
+  "mcpServers": {
+    "tribecrm": {
+      "command": "npx",
+      "args": ["-y", "@efficy/tribecrm-mcp-server"],
+      "env": {
+        "TRIBECRM_API_URL": "https://api.tribecrm.nl",
+        "TRIBECRM_CLIENT_ID": "your_client_id",
+        "TRIBECRM_CLIENT_SECRET": "your_client_secret",
+        "TRIBECRM_ORGANIZATION_ID": "your_org_id"
+      }
+    }
+  }
+}
 ```
 
-2. Configure your TribeCRM API credentials in `.env`:
-```env
-TRIBECRM_API_URL=https://api.tribecrm.com
-TRIBECRM_CLIENT_ID=your_client_id_here
-TRIBECRM_CLIENT_SECRET=your_client_secret_here
-TRIBECRM_ORGANIZATION_ID=optional_org_id
-MCP_SERVER_NAME=tribecrm
-```
-
-## 🏗️ Building
-
-```bash
-npm run build
-```
-
-## 🎯 Usage
-
-### Running the Server
-
-```bash
-npm start
-```
-
-### Development Mode
-
-```bash
-npm run dev
-```
-
-### MCP Client Configuration
-
-Add to your MCP client settings (e.g., `~/Library/Application Support/Claude/claude_desktop_config.json` for Claude Desktop):
+#### Using Local Installation
 
 ```json
 {
@@ -82,14 +81,30 @@ Add to your MCP client settings (e.g., `~/Library/Application Support/Claude/cla
       "command": "node",
       "args": ["/absolute/path/to/tribecrm-mcp-server/dist/index.js"],
       "env": {
-        "TRIBECRM_API_URL": "https://api.tribecrm.com",
+        "TRIBECRM_API_URL": "https://api.tribecrm.nl",
         "TRIBECRM_CLIENT_ID": "your_client_id",
-        "TRIBECRM_CLIENT_SECRET": "your_client_secret"
+        "TRIBECRM_CLIENT_SECRET": "your_client_secret",
+        "TRIBECRM_ORGANIZATION_ID": "your_org_id"
       }
     }
   }
 }
 ```
+
+### Getting TribeCRM Credentials
+
+1. Log in to your TribeCRM instance
+2. Navigate to Settings > Integrations > OAuth2 Apps
+3. Create a new OAuth2 application with "Service Account" type
+4. Copy the Client ID and Client Secret
+5. Add required scopes: `read write offline`
+
+### Environment Variables
+
+- `TRIBECRM_API_URL` (required): Your TribeCRM API URL
+- `TRIBECRM_CLIENT_ID` (required): OAuth2 Client ID
+- `TRIBECRM_CLIENT_SECRET` (required): OAuth2 Client Secret
+- `TRIBECRM_ORGANIZATION_ID` (optional): Organization UUID for multi-tenant setups
 
 ## 📚 Available Tools
 
@@ -284,12 +299,12 @@ MIT License - see LICENSE file for details
 
 - [TribeCRM](https://tribecrm.com) - Official TribeCRM website
 - [Model Context Protocol](https://modelcontextprotocol.io) - MCP documentation
-- [GitHub Repository](https://github.com/jnorsa-efficy/tribecrm-mcp-server)
+- [GitHub Repository](https://github.com/efficy-sa/tribecrm-mcp-server)
 
 ## 📧 Support
 
 For issues and questions:
-- Open an issue on [GitHub](https://github.com/jnorsa-efficy/tribecrm-mcp-server/issues)
+- Open an issue on [GitHub](https://github.com/efficy-sa/tribecrm-mcp-server/issues)
 - Check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
 
 ---
