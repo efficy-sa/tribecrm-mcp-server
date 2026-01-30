@@ -16,16 +16,17 @@ dotenv.config();
 
 // Validate configuration
 const config: TribeCRMConfig = {
-  apiUrl: process.env.TRIBECRM_API_URL || 'https://api.tribecrm.nl',
+  apiUrl: process.env.TRIBECRM_API_URL || '',
+  authUrl: process.env.TRIBECRM_AUTH_URL || '',
   clientId: process.env.TRIBECRM_CLIENT_ID || '',
   clientSecret: process.env.TRIBECRM_CLIENT_SECRET || '',
   organizationId: process.env.TRIBECRM_ORGANIZATION_ID,
 };
 
-if (!config.clientId || !config.clientSecret) {
+if (!config.apiUrl || !config.authUrl || !config.clientId || !config.clientSecret) {
   console.error('Error: Missing required environment variables');
-  console.error('Required: TRIBECRM_CLIENT_ID, TRIBECRM_CLIENT_SECRET');
-  console.error('Optional: TRIBECRM_API_URL (default: https://api.tribecrm.nl), TRIBECRM_ORGANIZATION_ID');
+  console.error('Required: TRIBECRM_API_URL, TRIBECRM_AUTH_URL, TRIBECRM_CLIENT_ID, TRIBECRM_CLIENT_SECRET');
+  console.error('Optional: TRIBECRM_ORGANIZATION_ID');
   process.exit(1);
 }
 
@@ -36,7 +37,7 @@ const client = new TribeCRMClient(config);
 const server = new Server(
   {
     name: process.env.MCP_SERVER_NAME || 'tribecrm',
-    version: '0.2.0',
+    version: '0.3.0',
   },
   {
     capabilities: {
@@ -371,8 +372,9 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('TribeCRM MCP Server v0.2.0 running on stdio');
+  console.error('TribeCRM MCP Server v0.3.0 running on stdio');
   console.error('Connected to:', config.apiUrl);
+  console.error('Auth URL:', config.authUrl);
 }
 
 main().catch((error) => {

@@ -63,6 +63,7 @@ Add to your Claude Desktop config file:
       "args": ["-y", "@efficy/tribecrm-mcp-server"],
       "env": {
         "TRIBECRM_API_URL": "https://api.tribecrm.nl",
+        "TRIBECRM_AUTH_URL": "https://auth.tribecrm.nl",
         "TRIBECRM_CLIENT_ID": "your_client_id",
         "TRIBECRM_CLIENT_SECRET": "your_client_secret",
         "TRIBECRM_ORGANIZATION_ID": "your_org_id"
@@ -82,6 +83,7 @@ Add to your Claude Desktop config file:
       "args": ["/absolute/path/to/tribecrm-mcp-server/dist/index.js"],
       "env": {
         "TRIBECRM_API_URL": "https://api.tribecrm.nl",
+        "TRIBECRM_AUTH_URL": "https://auth.tribecrm.nl",
         "TRIBECRM_CLIENT_ID": "your_client_id",
         "TRIBECRM_CLIENT_SECRET": "your_client_secret",
         "TRIBECRM_ORGANIZATION_ID": "your_org_id"
@@ -101,7 +103,8 @@ Add to your Claude Desktop config file:
 
 ### Environment Variables
 
-- `TRIBECRM_API_URL` (required): Your TribeCRM API URL
+- `TRIBECRM_API_URL` (required): Your TribeCRM API URL (e.g., https://api.tribecrm.nl or https://api-staging.tribecrm.nl)
+- `TRIBECRM_AUTH_URL` (required): Your TribeCRM OAuth2 authentication URL (e.g., https://auth.tribecrm.nl or https://auth-staging.tribecrm.nl)
 - `TRIBECRM_CLIENT_ID` (required): OAuth2 Client ID
 - `TRIBECRM_CLIENT_SECRET` (required): OAuth2 Client Secret
 - `TRIBECRM_ORGANIZATION_ID` (optional): Organization UUID for multi-tenant setups

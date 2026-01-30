@@ -1,5 +1,6 @@
 export interface TribeCRMConfig {
   apiUrl: string;
+  authUrl: string;
   clientId: string;
   clientSecret: string;
   organizationId?: string;

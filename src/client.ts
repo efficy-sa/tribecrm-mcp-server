@@ -25,7 +25,7 @@ export class TribeCRMClient {
 
     try {
       const response = await axios.post(
-        'https://auth.tribecrm.nl/oauth2/token',
+        `${this.config.authUrl}/oauth2/token`,
         new URLSearchParams({
           grant_type: 'client_credentials',
           client_id: this.config.clientId,
